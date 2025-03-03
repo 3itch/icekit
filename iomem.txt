@@ -1,0 +1,119 @@
+00000000-00000fff : Reserved
+00001000-0009efff : System RAM
+0009f000-000fffff : Reserved
+  000a0000-000bffff : PCI Bus 0000:00
+  000f0000-000fffff : System ROM
+00100000-39f98fff : System RAM
+39f99000-3a898fff : Reserved
+3a899000-3fac3fff : System RAM
+3fac4000-3fbb7fff : Reserved
+3fbb8000-3fc5dfff : System RAM
+3fc5e000-3fc5efff : Reserved
+3fc5f000-434aefff : System RAM
+434af000-452fefff : Reserved
+452ff000-45b2efff : ACPI Non-volatile Storage
+45b2f000-45bfefff : ACPI Tables
+45bff000-45bfffff : System RAM
+45c00000-49ffffff : Reserved
+4a300000-4a3fffff : Reserved
+4b000000-503fffff : Reserved
+  4c800000-503fffff : Graphics Stolen Memory
+50400000-bfffffff : PCI Bus 0000:00
+  50400000-504fffff : PCI Bus 0000:02
+    50400000-5040ffff : 0000:02:00.0
+      50400000-5040ffff : rtw88_pci
+  50500000-505fffff : PCI Bus 0000:01
+    50500000-50503fff : 0000:01:00.0
+      50500000-50503fff : nvme
+  50600000-5060ffff : 0000:00:14.0
+    50600000-5060ffff : xhci-hcd
+  50610000-50611fff : 0000:00:17.0
+    50610000-50611fff : ahci
+  50612000-50612fff : 0000:00:1f.5
+    50612000-50612fff : 0000:00:1f.5 0000:00:1f.5
+  50613000-506137ff : 0000:00:17.0
+    50613000-506137ff : ahci
+  50614000-506140ff : 0000:00:17.0
+    50614000-506140ff : ahci
+c0000000-cfffffff : PCI ECAM 0000 [bus 00-ff]
+fd000000-fd68ffff : pnp 00:04
+fd690000-fd69ffff : INT34C5:00
+  fd690000-fd69ffff : INT34C5:00 INT34C5:00
+fd6a0000-fd6affff : INT34C5:00
+  fd6a0000-fd6affff : INT34C5:00 INT34C5:00
+fd6b0000-fd6cffff : pnp 00:04
+fd6d0000-fd6dffff : INT34C5:00
+  fd6d0000-fd6dffff : INT34C5:00 INT34C5:00
+fd6e0000-fd6effff : INT34C5:00
+  fd6e0000-fd6effff : INT34C5:00 INT34C5:00
+fd6f0000-fdffffff : pnp 00:04
+fe010000-fe010fff : Reserved
+fe04c000-fe04ffff : pnp 00:04
+fe050000-fe0affff : pnp 00:04
+fe0d0000-fe0fffff : pnp 00:04
+fe200000-fe7fffff : pnp 00:04
+fec00000-fec003ff : IOAPIC 0
+fed00000-fed003ff : HPET 0
+  fed00000-fed003ff : PNP0103:00
+fed20000-fed7ffff : Reserved
+  fed40000-fed44fff : INTC6000:00
+    fed40000-fed44fff : INTC6000:00
+fed90000-fed90fff : dmar0
+fed91000-fed91fff : dmar1
+feda0000-feda0fff : pnp 00:03
+feda1000-feda1fff : pnp 00:03
+fedc0000-fedc7fff : pnp 00:03
+fee00000-feefffff : pnp 00:03
+ff000000-ffffffff : pnp 00:04
+100000000-2afbfffff : System RAM
+  29ec00000-2a01fffff : Kernel code
+  2a0200000-2a1086fff : Kernel rodata
+  2a1200000-2a1669a7f : Kernel data
+  2a1b94000-2a1ffffff : Kernel bss
+2afc00000-2afffffff : RAM buffer
+4000000000-7fffffffff : PCI Bus 0000:00
+  4000000000-400fffffff : 0000:00:02.0
+  4010000000-4016ffffff : 0000:00:02.0
+  4017000000-4017000fff : 0000:00:15.0
+    4017000000-40170001ff : lpss_dev
+      4017000000-40170001ff : i2c_designware.0 lpss_dev
+    4017000200-40170002ff : lpss_priv
+    4017000800-4017000fff : idma64.0
+      4017000800-4017000fff : idma64.0 idma64.0
+  4017001000-4017001fff : 0000:00:15.1
+    4017001000-40170011ff : lpss_dev
+      4017001000-40170011ff : i2c_designware.1 lpss_dev
+    4017001200-40170012ff : lpss_priv
+    4017001800-4017001fff : idma64.1
+      4017001800-4017001fff : idma64.1 idma64.1
+  4017002000-4017002fff : 0000:00:1e.0
+    4017002000-40170021ff : lpss_dev
+      4017002000-40170021ff : serial
+    4017002200-40170022ff : lpss_priv
+    4017002800-4017002fff : idma64.2
+      4017002800-4017002fff : idma64.2 idma64.2
+  4017003000-4017003fff : 0000:00:1e.3
+    4017003000-40170031ff : lpss_dev
+      4017003000-40170031ff : pxa2xx-spi.3 lpss_dev
+    4017003200-40170032ff : lpss_priv
+    4017003800-4017003fff : idma64.3
+      4017003800-4017003fff : idma64.3 idma64.3
+  4020000000-40ffffffff : 0000:00:02.0
+  6000000000-6000ffffff : 0000:00:02.0
+  6001000000-60010fffff : 0000:00:1f.3
+    6001000000-60010fffff : Audio DSP
+  6001100000-600111ffff : 0000:00:04.0
+    6001100000-600111ffff : proc_thermal
+  6001120000-600112ffff : 0000:00:0d.0
+    6001120000-600112ffff : xhci-hcd
+  6001130000-6001137fff : 0000:00:0a.0
+    6001134000-60011348ff : telem1
+    6001136198-60011361a7 : intel_vsec.telemetry.0
+    60011361a8-60011361b7 : intel_vsec.telemetry.0
+  6001138000-600113bfff : 0000:00:1f.3
+    6001138000-600113bfff : Audio DSP
+  600113c000-600113ffff : 0000:00:14.2
+  6001140000-60011400ff : 0000:00:1f.4
+  6001143000-6001143fff : 0000:00:16.0
+    6001143000-6001143fff : mei_me
+  6001146000-6001146fff : 0000:00:14.2
