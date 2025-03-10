@@ -291,6 +291,171 @@ References:
 
 
 
+
+
+
 ### ICEKIT ( scroll all the way up for CACHEKIT ) ### ---------------------------------------------------==========
 
-I'll come back and do this later ... ZzZzZZzz
+                        
+                   .----.-----.----.-----. the actual ICEKIT implementation
+                   |  __|  _  |   _|  -__|
+                   |____|_____|__| |_____|
+                                                
+
+core:
+    Unlike CacheKit ICEKIT decides to take another approach.
+    Instead of sharing the same goal of exploiting cache incoherency and
+evading memory introspection from the trusted execution environment ( SW ),
+we take a different approach.
+            ( mainly because AMD isn't ARM and doesn't share the same features )
+
+    So we implement Cache-As-Ram like CacheKit does...
+    We also implement Cache Line Locking like CacheKit also does...
+    So?
+                     
+    Well what's different is the goal and the hardware-supported features.
+    Most notably the fact ARMv7 supports implicit cache lockdown, which enables
+the user to lock data into cache as stated in the "CacheKit" section.
+    Yeah..Intel does not have this. Instead we have CAT ( Cache Allocation Technology ),
+which enables us to lock data into cache but with a twist:
+
+    - Data isn't locked in cache via hardware lock.
+    - Requires a software-defined implementation.
+    - Which also includes:
+        - Setting up resctrl interface and configuring CAT 
+    to use it.
+        - Defining function to lock cache way 
+                ( `lock_cache_way()` in our context )
+        - patience...
+
+    - ICEKIT requires `l3_cat` support which can be found by running `lscpu`.
+
+
+
+issues:
+    I spent a while digging around on where I can lock the data into...
+    And you may think: "Well CacheKit locks split icache and dcache tlbs" and
+you're right. However, there's no such thing as perfection.
+    On AMD ( I tested this on an AMD Ryzen 3600 ) there is no way to access
+the tlbs AT ALL.
+    And for those wondering what the cache hierarchy model on AMD looks like:
+
+
+              L1 cache                         L2 cache                   
+        ┌───────────────────────────┐    ┌───────────────────────────┐
+        │ 32KB P/c  icache & dcache │    │ 512KB P/c                 │    P/c = Per core
+        │            32KB     32KB  │    │                           │
+        │                           ├────►                           │
+        │            ITLB     DTLB  │    │                           │
+        │                           │    │                           │
+        │ 64KB x 6 cores = 384KB    │    │ 512KB x 6 cores = 3MB     │
+        │                  Total    │    │                   Total   │
+        └───────────────────────────┘    └────────┬──────────────────┘
+                                                  │                   
+                                 L3 cache         │                   
+                               ┌──────────────────▼───┐               
+                               │                      │               
+                               │ 16MB CCXs            │    CCX = Core Complexes         
+                               │                      │               
+                               │                      │               
+                               │                      │               
+                               │                      │               
+                               │ 16MB x 2x CCX = 32MB │               
+                               │                 Total│               
+                               └───────────┬──────────┘               
+                                           │                          
+                                           │                          
+                                           │                          
+                                           │                          
+                                   ┌───────▼───────┐                  
+                                   │ Main Memory...│                  
+                                   └───────────────┘    
+
+                            [Figure 2] AMD cache hierarchy
+
+
+    So first AMD looks in L1 cache, if there's no hit for our data there
+AMD looks inside of L2 cache.
+    If L2 cache is empty, AMD looks inside of L3 cache.
+    And of course if L3 cache is also empty, then AMD assumes the data is in main memory/RAM.
+
+
+    Since we can't touch the split TLBs inside of L1 cache, it really leaves us
+screwed to what we can and cannot replicate.
+    So instead I focused on the actual locking of the cache way.
+
+    First I tried doing this for L1, until I found out I couldn't lock data in L1
+because we have no l1_cat support to do so.
+    The processor does not support such a feature.
+    We could use Prime+Probe ( which is the most applicable here instead of Fliush+Reload )
+but even then, that's not reliable and is a pain in the ass to implement.
+    So instead I tried with L2.
+
+    With L2 I was...surprised to say the least.
+    It seems that anything prefetched into L2 also gets reflected into
+L3. Which isn't very ideal.
+    I could of prefetched my data into L2 and then quickly flooded the L3 cache:
+
+    ```
+        flood_l3(void) {
+            size_t i;
+
+            volatile char *flood_ptr = io_space_virt + IO_SIZE;
+            for (i = 0; i < L3_FLOOD_SIZE; i += 64) {
+                flood_ptr[i] = (char)(i & 0xFF);
+            }
+            asm volatile("mfence" ::: "memory");
+
+            for (i = 0; i < L3_FLOOD_SIZE; i += 64) {
+                asm volatile("prefetcht2 (%0)" : : "r"(flood_ptr + i));
+            }
+            asm volatile("mfence" ::: "memory");
+
+            for (i = 0; i < L3_FLOOD_SIZE; i += 64) {
+                (void)flood_ptr[i];
+            }
+            asm volatile("mfence" ::: "memory");
+        }
+    ```
+
+    This will ( hopefully ) flood l3 cache and evict our reflected data.
+    However, I didn't go for this approach in the end.
+
+    I have to make a confession. At first I was testing this on an Intel i7 ( alder lake )
+which doesn't support L3 CAT. Meaning that this issue would still happen, but we wouldn't be
+able to actually modify the L3 cache in any practical way ( i'll get to this in a second ).
+    So like I said. I realised this flooding technique wasn't very efficient...
+                                    ( also prefectch2 had a chance to prefetch into L2 as well
+                                evicting our main data with the flood... )
+
+
+solution:
+    Then I moved to my other computer which uses an AMD processor.
+    It supports `l3_cat` COOL!
+
+    I then tried this exact same procedure of carving out the I/O space,
+setting the page as WriteCombined ( not WriteBack and i'll say why in a bit as well ),
+writing to the page, and then prefetching into l3 cache.
+    Did it work? YES.
+
+    ```
+        [ 1678.794896] [ICEPICK] Initialising module...
+        [ 1678.794902] [ICEPICK] Register chrdev with major 505
+        [ 1678.794994] [ICEPICK] Target: 0xff000000-0xff03ffff
+        [ 1678.795005] [ICEPICK] Parsed: 0x00000000-0x00000fff
+        [ 1678.795075] [ICEPICK] Range   0x00000000-0xff03ffff
+        [ 1678.795424] [ICEPICK] Set MTRR0: base=0xff000000, size=0x40000 to WC
+        [ 1678.795430] [ICEPICK] Mapped WC space 0xff000000-0xff03ffff (262144 bytes)
+        [ 1678.818993] [ICEPICK] L3 cache miss monitoring enabled
+        [ 1678.818995] [ICEPICK] Module initialised
+        [ 1678.355032] [ICEPICK] Device opened
+        [ 1678.370129] [ICEPICK] Locked 262144 bytes in L3 way 0
+        [ 2321.052412] [ICEPICK] Flushed L3 cache lines                /*  I did a manual eviction myself to test 
+        [ 2321.052422] [ICEPICK] Device closed                                i also waited 5 1/2 hours with the cache lines
+    ```                                                                           still in L3 cache and no automatic evictions :) */ 
+
+
+
+Cache-As-Ram:
+
+    ..... ZzZZZz too tired to do this atm
